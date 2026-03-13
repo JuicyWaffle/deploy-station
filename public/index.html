@@ -167,6 +167,81 @@
 
   select:focus { border-color: rgba(0,255,136,0.4); }
 
+  .btn-new {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-new:hover {
+    border-color: var(--accent);
+    background: rgba(0,255,136,0.08);
+  }
+
+  .new-project-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    margin-top: 8px;
+    background: var(--surface);
+    border: 1px solid var(--accent2);
+    border-radius: 8px;
+  }
+
+  .new-project-row.visible { display: flex; }
+
+  .new-project-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-bright);
+    outline: none;
+  }
+
+  .new-project-row input:focus { border-color: rgba(0,136,255,0.4); }
+  .new-project-row input::placeholder { color: var(--text-dim); }
+
+  .btn-create {
+    background: var(--accent2);
+    border: none;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-create:hover { background: #00aaff; }
+
+  .btn-cancel {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+  }
+
+  .btn-cancel:hover { color: var(--warn); }
+
   .git-badge {
     font-family: var(--mono);
     font-size: 9px;
@@ -438,6 +513,12 @@
       <select id="project-select">
         <option value="">laden...</option>
       </select>
+      <button class="btn-new" onclick="showNewProject()" title="Nieuw project">+</button>
+    </div>
+    <div class="new-project-row" id="new-project-row">
+      <input type="text" id="new-project-name" placeholder="project-naam" />
+      <button class="btn-create" onclick="createProject()">aanmaken</button>
+      <button class="btn-cancel" onclick="hideNewProject()">&times;</button>
     </div>
   </div>
 
@@ -500,6 +581,48 @@ async function loadProjects() {
     toast('Kan projecten niet laden');
   }
 }
+
+// --- New project ---
+function showNewProject() {
+  document.getElementById('new-project-row').classList.add('visible');
+  document.getElementById('new-project-name').focus();
+}
+
+function hideNewProject() {
+  document.getElementById('new-project-row').classList.remove('visible');
+  document.getElementById('new-project-name').value = '';
+}
+
+async function createProject() {
+  const input = document.getElementById('new-project-name');
+  const name = input.value.trim();
+  if (!name) { toast('Vul een projectnaam in'); return; }
+
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast(`Project '${name}' aangemaakt`);
+      hideNewProject();
+      await loadProjects();
+      document.getElementById('project-select').value = name;
+      updateDeployBtn();
+    } else {
+      toast(data.error || 'Aanmaken mislukt');
+    }
+  } catch (e) {
+    toast('Server niet bereikbaar');
+  }
+}
+
+document.getElementById('new-project-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') createProject();
+  if (e.key === 'Escape') hideNewProject();
+});
 
 // --- Drop zone ---
 const dropZone = document.getElementById('drop-zone');

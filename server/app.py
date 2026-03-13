@@ -33,6 +33,8 @@ class DeployHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/deploy":
             self._handle_deploy()
+        elif self.path == "/api/projects":
+            self._create_project()
         else:
             self._json_response(404, {"error": "not found"})
 
@@ -49,6 +51,43 @@ class DeployHandler(BaseHTTPRequestHandler):
                     is_git = (entry / ".git").is_dir()
                     projects.append({"name": entry.name, "git": is_git})
         self._json_response(200, {"projects": projects})
+
+    def _create_project(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length)) if length else {}
+            name = body.get("name", "").strip()
+
+            if not name:
+                self._json_response(400, {"error": "geen projectnaam opgegeven"})
+                return
+
+            # Validate: only alphanumeric, hyphens, underscores
+            if not all(c.isalnum() or c in "-_" for c in name):
+                self._json_response(400, {"error": "ongeldige naam (alleen letters, cijfers, - en _)"})
+                return
+
+            project_dir = PROJECTS_DIR / name
+            if project_dir.exists():
+                self._json_response(409, {"error": f"'{name}' bestaat al"})
+                return
+
+            project_dir.mkdir(parents=True)
+
+            # Git init
+            subprocess.run(
+                ["git", "init"],
+                cwd=str(project_dir),
+                capture_output=True, text=True, timeout=10,
+            )
+
+            self._json_response(201, {
+                "ok": True,
+                "name": name,
+                "path": str(project_dir),
+            })
+        except Exception as e:
+            self._json_response(500, {"error": str(e)})
 
     def _handle_deploy(self):
         try:
