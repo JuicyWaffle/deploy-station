@@ -189,12 +189,28 @@ class DeployHandler(BaseHTTPRequestHandler):
                         )
                         git_output += result.stdout + result.stderr
 
-                        result = subprocess.run(
-                            ["git", "push"],
+                        # Check if remote exists; if not, create GitHub repo
+                        remote_check = subprocess.run(
+                            ["git", "remote", "get-url", "origin"],
                             cwd=str(project_dir),
-                            capture_output=True, text=True, timeout=60,
+                            capture_output=True, text=True, timeout=10,
                         )
-                        git_output += result.stdout + result.stderr
+                        if remote_check.returncode != 0:
+                            git_output += "\n[geen remote — maak GitHub repo aan...]\n"
+                            result = subprocess.run(
+                                ["gh", "repo", "create", project_name,
+                                 "--public", "--source=.", "--push"],
+                                cwd=str(project_dir),
+                                capture_output=True, text=True, timeout=60,
+                            )
+                            git_output += result.stdout + result.stderr
+                        else:
+                            result = subprocess.run(
+                                ["git", "push"],
+                                cwd=str(project_dir),
+                                capture_output=True, text=True, timeout=60,
+                            )
+                            git_output += result.stdout + result.stderr
                     except subprocess.TimeoutExpired:
                         git_output += "\n[timeout bij git operatie]"
                     except Exception as e:
