@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="/projects/deploy-station"
-PUBLIC_DIR="$PROJECT_DIR/public"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PORT=8080
 PLIST="$HOME/Library/LaunchAgents/com.deploystation.server.plist"
+
+mkdir -p "$HOME/Library/LaunchAgents"
 
 # Schrijf launchd plist
 cat > "$PLIST" << EOF
@@ -17,27 +19,27 @@ cat > "$PLIST" << EOF
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/python3</string>
-        <string>-m</string>
-        <string>http.server</string>
-        <string>$PORT</string>
-        <string>--directory</string>
-        <string>$PUBLIC_DIR</string>
+        <string>$SCRIPT_DIR/app.py</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
+    <key>WorkingDirectory</key>
+    <string>$PROJECT_DIR</string>
     <key>StandardOutPath</key>
-    <string>$PROJECT_DIR/server/access.log</string>
+    <string>$SCRIPT_DIR/access.log</string>
     <key>StandardErrorPath</key>
-    <string>$PROJECT_DIR/server/error.log</string>
+    <string>$SCRIPT_DIR/error.log</string>
 </dict>
 </plist>
 EOF
+
+echo "Plist geschreven: $PLIST"
 
 # Laad of herlaad de service
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
 
-echo "✓ Deploy Station draait op http://localhost:$PORT"
-echo "✓ Launchd service geregistreerd — start automatisch bij login"
+echo "Deploy Station draait op http://localhost:$PORT"
+echo "Launchd service geregistreerd — start automatisch bij login"

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deploy Station</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600&display=swap');
 
@@ -118,8 +117,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    max-width: 1200px;
+    gap: 20px;
+    max-width: 800px;
     width: 100%;
     margin: 0 auto;
     padding: 32px;
@@ -132,113 +131,156 @@
     text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--text-dim);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
-  #files-container {
+  /* Project selector */
+  .project-row {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
   }
 
-  .file-block {
+  .project-row label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  select {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    outline: none;
+    cursor: pointer;
+  }
+
+  select:focus { border-color: rgba(0,255,136,0.4); }
+
+  .git-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0,255,136,0.12);
+    color: var(--accent);
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent2);
+    background: rgba(0,136,255,0.04);
+  }
+
+  .drop-zone.has-file {
+    border-color: var(--accent);
+    border-style: solid;
+    background: rgba(0,255,136,0.03);
+    padding: 24px 20px;
+  }
+
+  .drop-zone .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  .drop-zone .hint {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .drop-zone .filename {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .drop-zone .filesize {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .drop-zone input[type="file"] { display: none; }
+
+  /* Preview */
+  .preview {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
-    transition: border-color 0.2s;
+    display: none;
   }
 
-  .file-block:focus-within {
-    border-color: rgba(0,255,136,0.3);
-  }
+  .preview.visible { display: block; }
 
-  .file-header {
+  .preview-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
     padding: 10px 14px;
     border-bottom: 1px solid var(--border);
     background: rgba(255,255,255,0.02);
   }
 
-  .file-icon { font-size: 13px; }
-
-  .path-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
+  .preview-header span {
     font-family: var(--mono);
-    font-size: 12px;
-    color: var(--accent);
-    caret-color: var(--accent);
-  }
-
-  .path-input::placeholder { color: var(--text-dim); }
-
-  .remove-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
+    font-size: 11px;
     color: var(--text-dim);
-    font-size: 16px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.15s, background 0.15s;
-    line-height: 1;
   }
 
-  .remove-btn:hover {
-    color: var(--warn);
-    background: rgba(255,68,102,0.1);
+  .file-list {
+    padding: 12px 14px;
+    max-height: 250px;
+    overflow-y: auto;
   }
 
-  .code-input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    padding: 14px;
+  .file-list .file-entry {
     font-family: var(--mono);
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: 11px;
     color: var(--text);
-    resize: vertical;
-    min-height: 140px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
   }
 
-  .code-input::placeholder { color: var(--text-dim); }
+  .file-list .file-entry:last-child { border-bottom: none; }
 
-  .actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 28px;
-  }
+  .file-list .file-path { color: var(--accent); }
+  .file-list .file-size { color: var(--text-dim); margin-left: 12px; }
 
+  /* Deploy button */
   .btn {
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 7px;
+    padding: 14px 28px;
+    border-radius: 8px;
     border: none;
     cursor: pointer;
     transition: all 0.15s;
     letter-spacing: 0.03em;
-  }
-
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-  }
-
-  .btn-ghost:hover {
-    border-color: var(--text-dim);
-    color: var(--text);
+    width: 100%;
   }
 
   .btn-primary {
@@ -252,117 +294,69 @@
   }
 
   .btn-primary:disabled {
-    opacity: 0.4;
+    opacity: 0.3;
     cursor: not-allowed;
     box-shadow: none;
   }
 
-  .zip-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 12px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-  }
-
-  .zip-row label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-
-  .zip-name-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-bright);
-  }
-
-  .drop-hint {
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 20px;
-  }
-
-  .drop-hint:hover {
-    border-color: var(--accent2);
-    color: var(--accent2);
-    background: rgba(0,136,255,0.04);
-  }
-
-  .shell-section {
-    margin-top: 8px;
-    border-top: 1px solid var(--border);
-    padding-top: 28px;
-  }
-
-  .shell-block {
+  /* Result */
+  .result {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
+    display: none;
   }
 
-  .shell-bar {
+  .result.visible { display: block; }
+
+  .result.success { border-color: rgba(0,255,136,0.3); }
+  .result.error { border-color: rgba(255,68,102,0.3); }
+
+  .result-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 14px;
+    gap: 10px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--border);
-    background: rgba(0,136,255,0.04);
   }
 
-  .shell-bar span {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent2);
-  }
+  .result-header .status-icon { font-size: 16px; }
 
-  .copy-btn {
-    font-family: var(--mono);
-    font-size: 10px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 4px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .copy-btn:hover {
-    border-color: var(--accent2);
-    color: var(--accent2);
-  }
-
-  pre {
-    padding: 16px;
+  .result-header .status-text {
     font-family: var(--mono);
     font-size: 12px;
-    line-height: 1.7;
-    color: var(--text);
-    overflow-x: auto;
+    font-weight: 600;
   }
 
-  .comment { color: var(--text-dim); }
-  .cmd { color: var(--accent); }
-  .flag { color: var(--accent2); }
-  .str { color: #ffaa44; }
+  .result.success .status-text { color: var(--accent); }
+  .result.error .status-text { color: var(--warn); }
 
+  .result-body {
+    padding: 14px;
+  }
+
+  .result-body pre {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .result-files {
+    padding: 0 14px 14px;
+  }
+
+  .result-files .file-entry {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    padding: 3px 0;
+  }
+
+  /* Toast */
   #toast {
     position: fixed;
     bottom: 32px;
@@ -386,12 +380,30 @@
     transform: translateY(0);
   }
 
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   .badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    min-width: 20px;
     height: 20px;
+    padding: 0 6px;
     background: rgba(0,255,136,0.15);
     color: var(--accent);
     border-radius: 5px;
@@ -408,7 +420,7 @@
   <div class="logo">DS</div>
   <div>
     <h1>Deploy Station</h1>
-    <p>Chat output → zip → project</p>
+    <p>zip upload &rarr; project deploy</p>
   </div>
   <div class="status-bar">
     <div class="status-dot"></div>
@@ -418,46 +430,49 @@
 
 <main>
 
-  <div class="zip-row">
-    <label>ZIP_NAME /</label>
-    <input class="zip-name-input" id="zip-name" value="deploy" placeholder="deploy" />
-    <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">.zip</span>
+  <!-- Step 1: Select project -->
+  <div>
+    <div class="section-label">1 &mdash; Project</div>
+    <div class="project-row">
+      <label>DEPLOY NAAR /</label>
+      <select id="project-select">
+        <option value="">laden...</option>
+      </select>
+    </div>
   </div>
 
-  <div class="section-label">
-    Files
-    <span class="badge" id="file-count">1</span>
+  <!-- Step 2: Upload zip -->
+  <div>
+    <div class="section-label">2 &mdash; Zip uploaden</div>
+    <div class="drop-zone" id="drop-zone">
+      <div class="icon">&#128230;</div>
+      <div class="hint">Sleep een .zip hierheen of klik om te kiezen</div>
+      <input type="file" id="file-input" accept=".zip">
+    </div>
   </div>
 
-  <div id="files-container"></div>
-
-  <div class="drop-hint" onclick="addFile()">
-    + voeg bestand toe — of plak hier een nieuw blok
+  <!-- Preview -->
+  <div class="preview" id="preview">
+    <div class="preview-header">
+      <span>Bestanden in zip <span class="badge" id="preview-count">0</span></span>
+    </div>
+    <div class="file-list" id="file-list"></div>
   </div>
 
-  <div class="actions">
-    <button class="btn btn-ghost" onclick="clearAll()">wis alles</button>
-    <button class="btn btn-ghost" onclick="parseClipboard()">📋 plak uit clipboard</button>
-    <button class="btn btn-primary" id="dl-btn" onclick="buildZip()">↓ download zip</button>
-  </div>
+  <!-- Step 3: Deploy -->
+  <button class="btn btn-primary" id="deploy-btn" disabled onclick="deploy()">
+    &#x2191; Deploy naar project
+  </button>
 
-  <div class="shell-section">
-    <div class="section-label">Na download — uitpakken & pushen</div>
-    <div class="shell-block">
-      <div class="shell-bar">
-        <span>~/project — zsh</span>
-        <button class="copy-btn" onclick="copyShell()">kopieer</button>
-      </div>
-      <pre id="shell-script"><span class="comment"># 1. uitpakken in je project root (bestaande files worden overschreven)</span>
-<span class="cmd">unzip</span> <span class="flag">-o</span> <span class="str">~/Downloads/deploy.zip</span> <span class="flag">-d</span> <span class="str">.</span>
-
-<span class="comment"># 2. commit & push</span>
-<span class="cmd">git</span> add <span class="flag">-A</span>
-<span class="cmd">git</span> commit <span class="flag">-m</span> <span class="str">"feat: $(date +%Y%m%d-%H%M) from claude"</span>
-<span class="cmd">git</span> push
-
-<span class="comment"># 3. deploy op cloud server (pas SSH alias aan)</span>
-<span class="cmd">ssh</span> cloud <span class="str">"cd ~/app && git pull && ./restart.sh"</span></pre>
+  <!-- Result -->
+  <div class="result" id="result">
+    <div class="result-header">
+      <span class="status-icon" id="result-icon"></span>
+      <span class="status-text" id="result-text"></span>
+    </div>
+    <div class="result-files" id="result-files"></div>
+    <div class="result-body">
+      <pre id="result-git"></pre>
     </div>
   </div>
 
@@ -466,139 +481,196 @@
 <div id="toast"></div>
 
 <script>
-let fileCount = 0;
+let selectedFile = null;
 
-function addFile(path = '', code = '') {
-  fileCount++;
-  updateBadge();
-  const container = document.getElementById('files-container');
-  const id = 'file-' + Date.now() + '-' + fileCount;
-  const block = document.createElement('div');
-  block.className = 'file-block';
-  block.id = id;
-  block.innerHTML = `
-    <div class="file-header">
-      <span class="file-icon">📄</span>
-      <input class="path-input" placeholder="src/components/Button.tsx" value="${escHtml(path)}" />
-      <button class="remove-btn" onclick="removeFile('${id}')">×</button>
-    </div>
-    <textarea class="code-input" placeholder="// plak code hier...">${escHtml(code)}</textarea>
-  `;
-  container.appendChild(block);
-  updateDownloadBtn();
-  const ta = block.querySelector('textarea');
-  ta.addEventListener('input', () => autoResize(ta));
-  if (code) autoResize(ta);
-}
-
-function autoResize(ta) {
-  ta.style.height = 'auto';
-  ta.style.height = Math.max(140, ta.scrollHeight) + 'px';
-}
-
-function removeFile(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-  fileCount = document.querySelectorAll('.file-block').length;
-  updateBadge();
-  updateDownloadBtn();
-}
-
-function updateBadge() {
-  document.getElementById('file-count').textContent =
-    document.querySelectorAll('.file-block').length;
-}
-
-function updateDownloadBtn() {
-  const blocks = document.querySelectorAll('.file-block');
-  document.getElementById('dl-btn').disabled = blocks.length === 0;
-}
-
-function clearAll() {
-  document.getElementById('files-container').innerHTML = '';
-  fileCount = 0;
-  updateBadge();
-  updateDownloadBtn();
-}
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-async function parseClipboard() {
+// --- Load projects ---
+async function loadProjects() {
   try {
-    const text = await navigator.clipboard.readText();
-    const parsed = parseCodeBlocks(text);
-    if (parsed.length === 0) {
-      toast('Geen codeblokken gevonden in clipboard');
-      return;
-    }
-    parsed.forEach(f => addFile(f.path, f.code));
-    toast(`${parsed.length} bestand${parsed.length > 1 ? 'en' : ''} toegevoegd`);
+    const res = await fetch('/api/projects');
+    const data = await res.json();
+    const sel = document.getElementById('project-select');
+    sel.innerHTML = '<option value="">kies project...</option>';
+    data.projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name + (p.git ? ' (git)' : '');
+      sel.appendChild(opt);
+    });
   } catch (e) {
-    toast('Clipboard niet beschikbaar — plak manueel');
+    toast('Kan projecten niet laden');
   }
 }
 
-function parseCodeBlocks(text) {
-  const results = [];
-  const patterns = [
-    /\/\/\s*([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
-    /```[\w]*:([^\n]+)\n([\s\S]*?)```/g,
-    /###\s+([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
-    /#\s+([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
-  ];
-  const seen = new Set();
-  for (const rx of patterns) {
-    let m;
-    while ((m = rx.exec(text)) !== null) {
-      const path = m[1].trim();
-      const code = m[2].trim();
-      if (!seen.has(path)) {
-        seen.add(path);
-        results.push({ path, code });
-      }
-    }
-  }
-  if (results.length === 0) {
-    const bare = /```[\w]*\n([\s\S]*?)```/g;
-    let i = 1, m2;
-    while ((m2 = bare.exec(text)) !== null) {
-      results.push({ path: `file${i++}.txt`, code: m2[1].trim() });
-    }
-  }
-  return results;
-}
+// --- Drop zone ---
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
 
-async function buildZip() {
-  const blocks = document.querySelectorAll('.file-block');
-  if (blocks.length === 0) return;
-  const zip = new JSZip();
-  blocks.forEach(block => {
-    const path = block.querySelector('.path-input').value.trim();
-    const code = block.querySelector('textarea').value;
-    if (path && code) zip.file(path, code);
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.zip')) {
+    handleFile(file);
+  } else {
+    toast('Alleen .zip bestanden');
+  }
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  const size = file.size < 1024 ? file.size + ' B'
+    : file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB'
+    : (file.size / 1048576).toFixed(1) + ' MB';
+
+  dropZone.classList.add('has-file');
+  dropZone.innerHTML = `
+    <div class="filename">${esc(file.name)}</div>
+    <div class="filesize">${size}</div>
+    <input type="file" id="file-input" accept=".zip" style="display:none">
+  `;
+
+  // Re-bind file input
+  const newInput = dropZone.querySelector('input');
+  newInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
   });
-  const zipName = (document.getElementById('zip-name').value.trim() || 'deploy') + '.zip';
-  updateShellScript(zipName);
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = zipName;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`↓ ${zipName} gedownload (${blocks.length} bestand${blocks.length > 1 ? 'en' : ''})`);
+  dropZone.addEventListener('click', () => newInput.click());
+
+  previewZip(file);
+  updateDeployBtn();
+
+  // Hide previous result
+  document.getElementById('result').classList.remove('visible', 'success', 'error');
 }
 
-function updateShellScript(zipName) {
-  const pre = document.getElementById('shell-script');
-  pre.innerHTML = pre.innerHTML.replace(/deploy\.zip/g, zipName);
+async function previewZip(file) {
+  const preview = document.getElementById('preview');
+  const fileList = document.getElementById('file-list');
+  const countBadge = document.getElementById('preview-count');
+
+  // Read zip with JSZip-free approach: just list from server or read locally
+  // We'll read the zip client-side using the FileReader + basic zip parsing
+  // Actually, let's just show the filename for now and let the server handle extraction
+  // For a proper preview we need JSZip — let's add it back just for preview
+  fileList.innerHTML = '<div class="file-entry" style="color:var(--text-dim)">Preview laden...</div>';
+  preview.classList.add('visible');
+
+  try {
+    // Dynamically load JSZip for client-side preview only
+    if (typeof JSZip === 'undefined') {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }
+    const arrayBuf = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuf);
+    const entries = [];
+    zip.forEach((path, entry) => {
+      if (!entry.dir) {
+        entries.push({ path, size: entry._data ? entry._data.uncompressedSize : 0 });
+      }
+    });
+
+    countBadge.textContent = entries.length;
+    fileList.innerHTML = entries.map(e => {
+      const size = e.size < 1024 ? e.size + ' B'
+        : e.size < 1048576 ? (e.size / 1024).toFixed(1) + ' KB'
+        : (e.size / 1048576).toFixed(1) + ' MB';
+      return `<div class="file-entry"><span class="file-path">${esc(e.path)}</span><span class="file-size">${size}</span></div>`;
+    }).join('');
+  } catch (e) {
+    fileList.innerHTML = '<div class="file-entry" style="color:var(--warn)">Kan zip niet lezen</div>';
+    countBadge.textContent = '?';
+  }
 }
 
-function copyShell() {
-  const text = document.getElementById('shell-script').innerText;
-  navigator.clipboard.writeText(text).then(() => toast('Shell script gekopieerd'));
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// --- Deploy ---
+function updateDeployBtn() {
+  const project = document.getElementById('project-select').value;
+  document.getElementById('deploy-btn').disabled = !selectedFile || !project;
+}
+
+document.getElementById('project-select').addEventListener('change', updateDeployBtn);
+
+async function deploy() {
+  const project = document.getElementById('project-select').value;
+  if (!selectedFile || !project) return;
+
+  const btn = document.getElementById('deploy-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>deploying...';
+
+  const form = new FormData();
+  form.append('project', project);
+  form.append('file', selectedFile);
+
+  try {
+    const res = await fetch('/api/deploy', { method: 'POST', body: form });
+    const data = await res.json();
+
+    const result = document.getElementById('result');
+    const icon = document.getElementById('result-icon');
+    const text = document.getElementById('result-text');
+    const files = document.getElementById('result-files');
+    const git = document.getElementById('result-git');
+
+    if (data.ok) {
+      result.className = 'result visible success';
+      icon.textContent = '\u2713';
+      text.textContent = `${data.count} bestanden deployed naar ${data.project}`;
+      files.innerHTML = data.files.map(f =>
+        `<div class="file-entry">${esc(f)}</div>`
+      ).join('');
+      git.textContent = data.git ? data.git_output || '(geen git output)' : '(geen git repo)';
+      toast('Deploy geslaagd');
+    } else {
+      result.className = 'result visible error';
+      icon.textContent = '\u2717';
+      text.textContent = data.error || 'Deploy mislukt';
+      files.innerHTML = '';
+      git.textContent = '';
+      toast('Deploy mislukt');
+    }
+  } catch (e) {
+    const result = document.getElementById('result');
+    result.className = 'result visible error';
+    document.getElementById('result-icon').textContent = '\u2717';
+    document.getElementById('result-text').textContent = 'Verbinding mislukt';
+    document.getElementById('result-files').innerHTML = '';
+    document.getElementById('result-git').textContent = e.message;
+    toast('Server niet bereikbaar');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '&#x2191; Deploy naar project';
+  updateDeployBtn();
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function toast(msg) {
@@ -608,7 +680,8 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-addFile();
+// Init
+loadProjects();
 </script>
 </body>
 </html>

@@ -1,17 +1,32 @@
 # Deploy Station
 
+Upload zip-bestanden uit Claude.ai en deploy ze automatisch naar lokale projecten.
+
 ## Starten
 ```bash
-bash /projects/deploy-station/server/serve.sh
+bash ~/projects/deploy-station/server/serve.sh
+```
+
+Of direct:
+```bash
+python3 ~/projects/deploy-station/server/app.py
 ```
 
 ## Bereikbaar op
-http://localhost:8080 of http://mini.local:8080 (vanuit LAN)
+- http://localhost:8080
+- http://mini.local:8080 (vanuit LAN)
+
+## Gebruik
+1. Open de URL in je browser
+2. Kies een project uit de dropdown (toont mappen in ~/projects/)
+3. Sleep een .zip bestand naar de upload zone
+4. Klik "Deploy naar project"
+5. De server pakt de zip uit, kopieert bestanden, en doet git commit + push
 
 ## Automatisch starten
-serve.sh registreert zichzelf als launchd service — start automatisch bij login.
+serve.sh registreert een launchd service — start automatisch bij login.
 
-Om de service te stoppen:
+Stoppen:
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.deploystaton.server.plist
+launchctl unload ~/Library/LaunchAgents/com.deploystation.server.plist
 ```
