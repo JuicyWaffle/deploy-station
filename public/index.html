@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy Station</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  header .actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background: #161616;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  button:hover { background: #222; border-color: #444; }
+
+  button.primary {
+    background: #1a6b3c;
+    border-color: #1a6b3c;
+    color: #fff;
+  }
+
+  button.primary:hover { background: #1f7d46; }
+
+  button.danger {
+    background: transparent;
+    border-color: #444;
+    color: #888;
+  }
+
+  button.danger:hover { background: #2a1010; border-color: #662222; color: #cc4444; }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  #files {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .file-entry {
+    border: 1px solid #222;
+    border-radius: 8px;
+    background: #111;
+    overflow: hidden;
+  }
+
+  .file-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #161616;
+    border-bottom: 1px solid #222;
+  }
+
+  .file-header input {
+    flex: 1;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #e0e0e0;
+    outline: none;
+  }
+
+  .file-header input:focus { border-color: #555; }
+
+  .file-header input::placeholder { color: #555; }
+
+  .file-entry textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 14px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #0d0d0d;
+    border: none;
+    color: #d4d4d4;
+    resize: vertical;
+    outline: none;
+    tab-size: 2;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #555;
+  }
+
+  .empty-state p { margin-bottom: 16px; font-size: 15px; }
+
+  .file-count {
+    font-size: 13px;
+    color: #666;
+    padding: 2px 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+  }
+
+  .collapse-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: none;
+    background: none;
+    color: #666;
+    cursor: pointer;
+  }
+
+  .collapse-btn:hover { color: #aaa; }
+
+  .file-entry.collapsed textarea { display: none; }
+  .file-entry.collapsed .file-header { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <h1>Deploy Station</h1>
+    <span class="file-count" id="fileCount">0 bestanden</span>
+  </div>
+  <div class="actions">
+    <button onclick="addFile()">+ Bestand</button>
+    <button class="primary" onclick="downloadZip()">Download ZIP</button>
+  </div>
+</header>
+
+<main>
+  <div id="files"></div>
+  <div class="empty-state" id="emptyState">
+    <p>Nog geen bestanden toegevoegd.</p>
+    <button onclick="addFile()">+ Eerste bestand toevoegen</button>
+  </div>
+</main>
+
+<script>
+let fileId = 0;
+
+function addFile(path = '', content = '') {
+  const id = fileId++;
+  const container = document.getElementById('files');
+  const entry = document.createElement('div');
+  entry.className = 'file-entry';
+  entry.id = 'file-' + id;
+  entry.innerHTML = `
+    <div class="file-header">
+      <button class="collapse-btn" onclick="toggleCollapse(${id})" title="In-/uitklappen">&#9660;</button>
+      <input type="text" placeholder="pad/naar/bestand.txt" value="${escapeAttr(path)}" id="path-${id}">
+      <button class="danger" onclick="removeFile(${id})">&#10005;</button>
+    </div>
+    <textarea placeholder="Plak of typ de code hier..." id="content-${id}">${escapeHtml(content)}</textarea>
+  `;
+  container.appendChild(entry);
+
+  // Tab key support in textarea
+  const textarea = document.getElementById('content-' + id);
+  textarea.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 2;
+    }
+  });
+
+  updateUI();
+  document.getElementById('path-' + id).focus();
+}
+
+function removeFile(id) {
+  const el = document.getElementById('file-' + id);
+  if (el) el.remove();
+  updateUI();
+}
+
+function toggleCollapse(id) {
+  const el = document.getElementById('file-' + id);
+  if (el) {
+    el.classList.toggle('collapsed');
+    const btn = el.querySelector('.collapse-btn');
+    btn.innerHTML = el.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
+  }
+}
+
+function updateUI() {
+  const entries = document.querySelectorAll('.file-entry');
+  const count = entries.length;
+  document.getElementById('fileCount').textContent = count + ' bestand' + (count !== 1 ? 'en' : '');
+  document.getElementById('emptyState').style.display = count === 0 ? 'block' : 'none';
+}
+
+async function downloadZip() {
+  const entries = document.querySelectorAll('.file-entry');
+  if (entries.length === 0) {
+    alert('Voeg eerst bestanden toe.');
+    return;
+  }
+
+  const zip = new JSZip();
+  let hasErrors = false;
+
+  entries.forEach(entry => {
+    const id = entry.id.replace('file-', '');
+    const path = document.getElementById('path-' + id).value.trim();
+    const content = document.getElementById('content-' + id).value;
+
+    if (!path) {
+      hasErrors = true;
+      document.getElementById('path-' + id).style.borderColor = '#662222';
+      return;
+    }
+
+    // Normalize: strip leading slash
+    const normalizedPath = path.replace(/^\/+/, '');
+    zip.file(normalizedPath, content);
+  });
+
+  if (hasErrors) {
+    alert('Vul alle bestandspaden in.');
+    return;
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'deploy-' + new Date().toISOString().slice(0, 10) + '.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escapeAttr(str) {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+updateUI();
+</script>
+
+</body>
+</html>
