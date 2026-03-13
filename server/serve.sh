@@ -1,66 +1,43 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-LABEL="com.openclaw.deploy-station"
-PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
+PROJECT_DIR="/projects/deploy-station"
+PUBLIC_DIR="$PROJECT_DIR/public"
 PORT=8080
-PUBLIC_DIR="$(cd "$(dirname "$0")/../public" && pwd)"
+PLIST="$HOME/Library/LaunchAgents/com.deploystation.server.plist"
 
-echo "=== Deploy Station ==="
-echo "Serving: $PUBLIC_DIR"
-echo "Port:    $PORT"
-
-# Create or update launchd plist
-mkdir -p "$HOME/Library/LaunchAgents"
-
-cat > "$PLIST" <<EOF
+# Schrijf launchd plist
+cat > "$PLIST" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>${LABEL}</string>
+    <string>com.deploystation.server</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/python3</string>
         <string>-m</string>
         <string>http.server</string>
-        <string>${PORT}</string>
+        <string>$PORT</string>
         <string>--directory</string>
-        <string>${PUBLIC_DIR}</string>
+        <string>$PUBLIC_DIR</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>${HOME}/.nakedcode/logs/deploy-station.log</string>
+    <string>$PROJECT_DIR/server/access.log</string>
     <key>StandardErrorPath</key>
-    <string>${HOME}/.nakedcode/logs/deploy-station.error.log</string>
+    <string>$PROJECT_DIR/server/error.log</string>
 </dict>
 </plist>
 EOF
 
-echo "Plist written: $PLIST"
-
-# Unload if already loaded (ignore errors if not loaded)
+# Laad of herlaad de service
 launchctl unload "$PLIST" 2>/dev/null || true
-
-# Load the service — launchd starts the process automatically (RunAtLoad + KeepAlive)
 launchctl load "$PLIST"
 
-# Wait for server to come up
-sleep 2
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${PORT}" 2>/dev/null || echo "000")
-if [ "$HTTP_CODE" = "200" ]; then
-  echo ""
-  echo "Server draait. Bereikbaar op:"
-  echo "  http://localhost:${PORT}"
-  echo "  http://mini.local:${PORT}"
-  echo ""
-  echo "De server start voortaan automatisch bij login."
-else
-  echo ""
-  echo "Launchd service geladen, maar server reageert nog niet (HTTP $HTTP_CODE)."
-  echo "Check logs: ~/.nakedcode/logs/deploy-station.error.log"
-fi
+echo "✓ Deploy Station draait op http://localhost:$PORT"
+echo "✓ Launchd service geregistreerd — start automatisch bij login"

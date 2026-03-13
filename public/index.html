@@ -1,86 +1,157 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deploy Station</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #00ff88;
+    --accent2: #0088ff;
+    --warn: #ff4466;
+    --text: #c8c8d8;
+    --text-dim: #55556a;
+    --text-bright: #eeeef8;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-    background: #0a0a0a;
-    color: #e0e0e0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
   }
 
   header {
+    position: relative;
+    z-index: 1;
     padding: 24px 32px;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 16px;
+    background: rgba(10,10,15,0.9);
+    backdrop-filter: blur(10px);
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: #000;
+    font-size: 14px;
+    flex-shrink: 0;
   }
 
   header h1 {
-    font-size: 20px;
+    font-family: var(--mono);
+    font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-bright);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
-  header .actions {
+  header p {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .status-bar {
+    margin-left: auto;
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
   }
 
-  button {
-    font-family: inherit;
-    font-size: 13px;
-    padding: 8px 16px;
-    border: 1px solid #333;
-    border-radius: 6px;
-    background: #161616;
-    color: #e0e0e0;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    animation: pulse 2s infinite;
   }
 
-  button:hover { background: #222; border-color: #444; }
-
-  button.primary {
-    background: #1a6b3c;
-    border-color: #1a6b3c;
-    color: #fff;
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
-
-  button.primary:hover { background: #1f7d46; }
-
-  button.danger {
-    background: transparent;
-    border-color: #444;
-    color: #888;
-  }
-
-  button.danger:hover { background: #2a1010; border-color: #662222; color: #cc4444; }
 
   main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 24px 32px;
-  }
-
-  #files {
+    position: relative;
+    z-index: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 32px;
   }
 
-  .file-entry {
-    border: 1px solid #222;
-    border-radius: 8px;
-    background: #111;
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  #files-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .file-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
     overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .file-block:focus-within {
+    border-color: rgba(0,255,136,0.3);
   }
 
   .file-header {
@@ -88,200 +159,456 @@
     align-items: center;
     gap: 10px;
     padding: 10px 14px;
-    background: #161616;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
   }
 
-  .file-header input {
+  .file-icon { font-size: 13px; }
+
+  .path-input {
     flex: 1;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 13px;
-    padding: 6px 10px;
-    background: #0a0a0a;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #e0e0e0;
-    outline: none;
-  }
-
-  .file-header input:focus { border-color: #555; }
-
-  .file-header input::placeholder { color: #555; }
-
-  .file-entry textarea {
-    width: 100%;
-    min-height: 200px;
-    padding: 14px;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    background: #0d0d0d;
+    background: transparent;
     border: none;
-    color: #d4d4d4;
-    resize: vertical;
     outline: none;
-    tab-size: 2;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 80px 20px;
-    color: #555;
-  }
-
-  .empty-state p { margin-bottom: 16px; font-size: 15px; }
-
-  .file-count {
-    font-size: 13px;
-    color: #666;
-    padding: 2px 8px;
-    background: #1a1a1a;
-    border-radius: 4px;
-  }
-
-  .collapse-btn {
-    padding: 4px 8px;
+    font-family: var(--mono);
     font-size: 12px;
-    border: none;
-    background: none;
-    color: #666;
-    cursor: pointer;
+    color: var(--accent);
+    caret-color: var(--accent);
   }
 
-  .collapse-btn:hover { color: #aaa; }
+  .path-input::placeholder { color: var(--text-dim); }
 
-  .file-entry.collapsed textarea { display: none; }
-  .file-entry.collapsed .file-header { border-bottom: none; }
+  .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+  }
+
+  .remove-btn:hover {
+    color: var(--warn);
+    background: rgba(255,68,102,0.1);
+  }
+
+  .code-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  .code-input::placeholder { color: var(--text-dim); }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-primary:hover {
+    background: #00ffaa;
+    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .zip-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .zip-row label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .zip-name-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-bright);
+  }
+
+  .drop-hint {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .drop-hint:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(0,136,255,0.04);
+  }
+
+  .shell-section {
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+  }
+
+  .shell-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .shell-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,136,255,0.04);
+  }
+
+  .shell-bar span {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+  }
+
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  pre {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    overflow-x: auto;
+  }
+
+  .comment { color: var(--text-dim); }
+  .cmd { color: var(--accent); }
+  .flag { color: var(--accent2); }
+  .str { color: #ffaa44; }
+
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s;
+    box-shadow: 0 0 30px rgba(0,255,136,0.15);
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: rgba(0,255,136,0.15);
+    color: var(--accent);
+    border-radius: 5px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div style="display:flex;align-items:center;gap:14px;">
+  <div class="logo">DS</div>
+  <div>
     <h1>Deploy Station</h1>
-    <span class="file-count" id="fileCount">0 bestanden</span>
+    <p>Chat output → zip → project</p>
   </div>
-  <div class="actions">
-    <button onclick="addFile()">+ Bestand</button>
-    <button class="primary" onclick="downloadZip()">Download ZIP</button>
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span>ready</span>
   </div>
 </header>
 
 <main>
-  <div id="files"></div>
-  <div class="empty-state" id="emptyState">
-    <p>Nog geen bestanden toegevoegd.</p>
-    <button onclick="addFile()">+ Eerste bestand toevoegen</button>
+
+  <div class="zip-row">
+    <label>ZIP_NAME /</label>
+    <input class="zip-name-input" id="zip-name" value="deploy" placeholder="deploy" />
+    <span style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">.zip</span>
   </div>
+
+  <div class="section-label">
+    Files
+    <span class="badge" id="file-count">1</span>
+  </div>
+
+  <div id="files-container"></div>
+
+  <div class="drop-hint" onclick="addFile()">
+    + voeg bestand toe — of plak hier een nieuw blok
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="clearAll()">wis alles</button>
+    <button class="btn btn-ghost" onclick="parseClipboard()">📋 plak uit clipboard</button>
+    <button class="btn btn-primary" id="dl-btn" onclick="buildZip()">↓ download zip</button>
+  </div>
+
+  <div class="shell-section">
+    <div class="section-label">Na download — uitpakken & pushen</div>
+    <div class="shell-block">
+      <div class="shell-bar">
+        <span>~/project — zsh</span>
+        <button class="copy-btn" onclick="copyShell()">kopieer</button>
+      </div>
+      <pre id="shell-script"><span class="comment"># 1. uitpakken in je project root (bestaande files worden overschreven)</span>
+<span class="cmd">unzip</span> <span class="flag">-o</span> <span class="str">~/Downloads/deploy.zip</span> <span class="flag">-d</span> <span class="str">.</span>
+
+<span class="comment"># 2. commit & push</span>
+<span class="cmd">git</span> add <span class="flag">-A</span>
+<span class="cmd">git</span> commit <span class="flag">-m</span> <span class="str">"feat: $(date +%Y%m%d-%H%M) from claude"</span>
+<span class="cmd">git</span> push
+
+<span class="comment"># 3. deploy op cloud server (pas SSH alias aan)</span>
+<span class="cmd">ssh</span> cloud <span class="str">"cd ~/app && git pull && ./restart.sh"</span></pre>
+    </div>
+  </div>
+
 </main>
 
+<div id="toast"></div>
+
 <script>
-let fileId = 0;
+let fileCount = 0;
 
-function addFile(path = '', content = '') {
-  const id = fileId++;
-  const container = document.getElementById('files');
-  const entry = document.createElement('div');
-  entry.className = 'file-entry';
-  entry.id = 'file-' + id;
-  entry.innerHTML = `
+function addFile(path = '', code = '') {
+  fileCount++;
+  updateBadge();
+  const container = document.getElementById('files-container');
+  const id = 'file-' + Date.now() + '-' + fileCount;
+  const block = document.createElement('div');
+  block.className = 'file-block';
+  block.id = id;
+  block.innerHTML = `
     <div class="file-header">
-      <button class="collapse-btn" onclick="toggleCollapse(${id})" title="In-/uitklappen">&#9660;</button>
-      <input type="text" placeholder="pad/naar/bestand.txt" value="${escapeAttr(path)}" id="path-${id}">
-      <button class="danger" onclick="removeFile(${id})">&#10005;</button>
+      <span class="file-icon">📄</span>
+      <input class="path-input" placeholder="src/components/Button.tsx" value="${escHtml(path)}" />
+      <button class="remove-btn" onclick="removeFile('${id}')">×</button>
     </div>
-    <textarea placeholder="Plak of typ de code hier..." id="content-${id}">${escapeHtml(content)}</textarea>
+    <textarea class="code-input" placeholder="// plak code hier...">${escHtml(code)}</textarea>
   `;
-  container.appendChild(entry);
+  container.appendChild(block);
+  updateDownloadBtn();
+  const ta = block.querySelector('textarea');
+  ta.addEventListener('input', () => autoResize(ta));
+  if (code) autoResize(ta);
+}
 
-  // Tab key support in textarea
-  const textarea = document.getElementById('content-' + id);
-  textarea.addEventListener('keydown', function(e) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = this.selectionStart;
-      const end = this.selectionEnd;
-      this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
-      this.selectionStart = this.selectionEnd = start + 2;
-    }
-  });
-
-  updateUI();
-  document.getElementById('path-' + id).focus();
+function autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(140, ta.scrollHeight) + 'px';
 }
 
 function removeFile(id) {
-  const el = document.getElementById('file-' + id);
+  const el = document.getElementById(id);
   if (el) el.remove();
-  updateUI();
+  fileCount = document.querySelectorAll('.file-block').length;
+  updateBadge();
+  updateDownloadBtn();
 }
 
-function toggleCollapse(id) {
-  const el = document.getElementById('file-' + id);
-  if (el) {
-    el.classList.toggle('collapsed');
-    const btn = el.querySelector('.collapse-btn');
-    btn.innerHTML = el.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-  }
+function updateBadge() {
+  document.getElementById('file-count').textContent =
+    document.querySelectorAll('.file-block').length;
 }
 
-function updateUI() {
-  const entries = document.querySelectorAll('.file-entry');
-  const count = entries.length;
-  document.getElementById('fileCount').textContent = count + ' bestand' + (count !== 1 ? 'en' : '');
-  document.getElementById('emptyState').style.display = count === 0 ? 'block' : 'none';
+function updateDownloadBtn() {
+  const blocks = document.querySelectorAll('.file-block');
+  document.getElementById('dl-btn').disabled = blocks.length === 0;
 }
 
-async function downloadZip() {
-  const entries = document.querySelectorAll('.file-entry');
-  if (entries.length === 0) {
-    alert('Voeg eerst bestanden toe.');
-    return;
-  }
+function clearAll() {
+  document.getElementById('files-container').innerHTML = '';
+  fileCount = 0;
+  updateBadge();
+  updateDownloadBtn();
+}
 
-  const zip = new JSZip();
-  let hasErrors = false;
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  entries.forEach(entry => {
-    const id = entry.id.replace('file-', '');
-    const path = document.getElementById('path-' + id).value.trim();
-    const content = document.getElementById('content-' + id).value;
-
-    if (!path) {
-      hasErrors = true;
-      document.getElementById('path-' + id).style.borderColor = '#662222';
+async function parseClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    const parsed = parseCodeBlocks(text);
+    if (parsed.length === 0) {
+      toast('Geen codeblokken gevonden in clipboard');
       return;
     }
-
-    // Normalize: strip leading slash
-    const normalizedPath = path.replace(/^\/+/, '');
-    zip.file(normalizedPath, content);
-  });
-
-  if (hasErrors) {
-    alert('Vul alle bestandspaden in.');
-    return;
+    parsed.forEach(f => addFile(f.path, f.code));
+    toast(`${parsed.length} bestand${parsed.length > 1 ? 'en' : ''} toegevoegd`);
+  } catch (e) {
+    toast('Clipboard niet beschikbaar — plak manueel');
   }
+}
 
+function parseCodeBlocks(text) {
+  const results = [];
+  const patterns = [
+    /\/\/\s*([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
+    /```[\w]*:([^\n]+)\n([\s\S]*?)```/g,
+    /###\s+([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
+    /#\s+([^\n]+\.\w+)\n```[\w]*\n([\s\S]*?)```/g,
+  ];
+  const seen = new Set();
+  for (const rx of patterns) {
+    let m;
+    while ((m = rx.exec(text)) !== null) {
+      const path = m[1].trim();
+      const code = m[2].trim();
+      if (!seen.has(path)) {
+        seen.add(path);
+        results.push({ path, code });
+      }
+    }
+  }
+  if (results.length === 0) {
+    const bare = /```[\w]*\n([\s\S]*?)```/g;
+    let i = 1, m2;
+    while ((m2 = bare.exec(text)) !== null) {
+      results.push({ path: `file${i++}.txt`, code: m2[1].trim() });
+    }
+  }
+  return results;
+}
+
+async function buildZip() {
+  const blocks = document.querySelectorAll('.file-block');
+  if (blocks.length === 0) return;
+  const zip = new JSZip();
+  blocks.forEach(block => {
+    const path = block.querySelector('.path-input').value.trim();
+    const code = block.querySelector('textarea').value;
+    if (path && code) zip.file(path, code);
+  });
+  const zipName = (document.getElementById('zip-name').value.trim() || 'deploy') + '.zip';
+  updateShellScript(zipName);
   const blob = await zip.generateAsync({ type: 'blob' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'deploy-' + new Date().toISOString().slice(0, 10) + '.zip';
+  a.download = zipName;
   a.click();
   URL.revokeObjectURL(url);
+  toast(`↓ ${zipName} gedownload (${blocks.length} bestand${blocks.length > 1 ? 'en' : ''})`);
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function updateShellScript(zipName) {
+  const pre = document.getElementById('shell-script');
+  pre.innerHTML = pre.innerHTML.replace(/deploy\.zip/g, zipName);
 }
 
-function escapeAttr(str) {
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function copyShell() {
+  const text = document.getElementById('shell-script').innerText;
+  navigator.clipboard.writeText(text).then(() => toast('Shell script gekopieerd'));
 }
 
-updateUI();
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+addFile();
 </script>
-
 </body>
 </html>
